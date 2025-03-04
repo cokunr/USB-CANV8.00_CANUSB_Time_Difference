@@ -1,9 +1,12 @@
-import sys #系統相關
-import pandas as pd #資料處理
+import sys  # 系統相關
+import pandas as pd  # 資料處理
 from PyQt5.QtWidgets import (QApplication, QWidget, QPushButton, QVBoxLayout,
                              QFileDialog, QLabel, QTableWidget, QTableWidgetItem,
-                             QHBoxLayout, QLineEdit, QGridLayout, QMessageBox, QComboBox) #視窗元件
-import os #原xls檔案轉csv處理
+                             QHBoxLayout, QLineEdit, QGridLayout, QMessageBox, QComboBox)  # 視窗元件
+from PyQt5.QtCore import Qt  # 匯入 Qt 模組以便使用對齊方式
+
+import os  # 原xls檔案轉csv處理
+
 
 class TimeDifferenceApp(QWidget):
     def __init__(self):
@@ -15,31 +18,54 @@ class TimeDifferenceApp(QWidget):
         self.setGeometry(100, 100, 800, 600)  # 加大視窗尺寸
 
         # --- 輸入欄位 ---
-        input_layout = QGridLayout()
+        main_input_layout = QHBoxLayout()  # 使用水平佈局來分割左右兩部分
+
+        left_input_layout = QGridLayout()  # 左邊的佈局 (ID + 選單、最小時間差)
+        right_input_layout = QGridLayout()  # 右邊的佈局 (報文 + 選單)
+
+        # 設定左右input_layout的伸縮比例為1
+        main_input_layout.addLayout(left_input_layout,1)
+        main_input_layout.addLayout(right_input_layout,1)
+
+        # --- 左邊輸入欄位 ---
 
         # ID1
         self.id1_label = QLabel("ID1:", self)
         self.id1_input = QComboBox(self)
-        input_layout.addWidget(self.id1_label, 0, 0)
-        input_layout.addWidget(self.id1_input, 0, 1)
-
-        # 報文1
-        self.data1_label = QLabel("報文1:", self)
-        self.data1_input = QComboBox(self)
-        input_layout.addWidget(self.data1_label, 0, 2)
-        input_layout.addWidget(self.data1_input, 0, 3)
+        left_input_layout.addWidget(self.id1_label, 0, 0)  # 在左邊佈局的第一列、第一行
+        left_input_layout.addWidget(self.id1_input, 0, 1)  # 在左邊佈局的第一列、第二行
+        left_input_layout.setAlignment(self.id1_label, Qt.AlignRight | Qt.AlignVCenter)  # 標籤靠右對齊
 
         # ID2
         self.id2_label = QLabel("ID2:", self)
         self.id2_input = QComboBox(self)
-        input_layout.addWidget(self.id2_label, 1, 0)
-        input_layout.addWidget(self.id2_input, 1, 1)
+        left_input_layout.addWidget(self.id2_label, 1, 0)  # 在左邊佈局的第二列、第一行
+        left_input_layout.addWidget(self.id2_input, 1, 1)  # 在左邊佈局的第二列、第二行
+        left_input_layout.setAlignment(self.id2_label, Qt.AlignRight | Qt.AlignVCenter)  # 標籤靠右對齊
+
+        # 最小時間差輸入欄位
+        self.min_time_diff_label = QLabel("最小時間差 (秒):", self)
+        self.min_time_diff_input = QLineEdit(self)
+        self.min_time_diff_input.setText("0.000")  # 預設值為 0
+        left_input_layout.addWidget(self.min_time_diff_label, 2, 0)  # 在左邊佈局的第三列、第一行
+        left_input_layout.addWidget(self.min_time_diff_input, 2, 1)  # 在左邊佈局的第三列、第二行
+        left_input_layout.setAlignment(self.min_time_diff_label, Qt.AlignRight | Qt.AlignVCenter)  # 標籤靠右對齊
+
+        # --- 右邊輸入欄位 ---
+
+        # 報文1
+        self.data1_label = QLabel("報文1:", self)
+        self.data1_input = QComboBox(self)
+        right_input_layout.addWidget(self.data1_label, 0, 0)  # 在右邊佈局的第一列、第一行
+        right_input_layout.addWidget(self.data1_input, 0, 1)  # 在右邊佈局的第一列、第二行
+        right_input_layout.setAlignment(self.data1_label, Qt.AlignRight | Qt.AlignVCenter)  # 標籤靠右對齊
 
         # 報文2
         self.data2_label = QLabel("報文2:", self)
         self.data2_input = QComboBox(self)
-        input_layout.addWidget(self.data2_label, 1, 2)
-        input_layout.addWidget(self.data2_input, 1, 3)
+        right_input_layout.addWidget(self.data2_label, 1, 0)  # 在右邊佈局的第二列、第一行
+        right_input_layout.addWidget(self.data2_input, 1, 1)  # 在右邊佈局的第二列、第二行
+        right_input_layout.setAlignment(self.data2_label, Qt.AlignRight | Qt.AlignVCenter)  # 標籤靠右對齊
 
         # --- 按鈕 ---
         self.loadButton = QPushButton('選擇 CSV 檔案', self)
@@ -56,8 +82,8 @@ class TimeDifferenceApp(QWidget):
 
         # --- 表格 ---
         self.table = QTableWidget()
-        self.table.setColumnCount(3)
-        self.table.setHorizontalHeaderLabels(["觸發時間", "結束時間", "時間差 (秒)"])
+        self.table.setColumnCount(4)
+        self.table.setHorizontalHeaderLabels(["觸發時間", "結束時間", "時間差 (秒)", "報文1發送次數"])
 
         # --- 主佈局 ---
         main_layout = QVBoxLayout()
@@ -65,7 +91,7 @@ class TimeDifferenceApp(QWidget):
         main_layout.addWidget(self.fileLabel)
         main_layout.addWidget(self.saveButton)
         main_layout.addWidget(self.saveLabel)
-        main_layout.addLayout(input_layout)
+        main_layout.addLayout(main_input_layout)  # 新增：加入主水平佈局
         main_layout.addWidget(self.processButton)
         main_layout.addWidget(self.table)
         self.setLayout(main_layout)
@@ -79,10 +105,14 @@ class TimeDifferenceApp(QWidget):
         self.CANID2 = ""
         self.CANData1 = ""
         self.CANData2 = ""
+        # 新增最小時間
+        self.min_time_diff = 0.0
 
     def loadFile(self):
         options = QFileDialog.Options()
-        file_name, _ = QFileDialog.getOpenFileName(self, "選擇檔案", "", "Excel Files (*.xls *.xlsx);;CSV Files (*.csv);;All Files (*)", options=options)
+        file_name, _ = QFileDialog.getOpenFileName(self, "選擇檔案", "",
+                                                   "Excel Files (*.xls *.xlsx);;CSV Files (*.csv);;All Files (*)",
+                                                   options=options)
         if file_name:
             self.file_path = file_name
             self.fileLabel.setText(f'選擇的檔案: {file_name}')
@@ -92,7 +122,7 @@ class TimeDifferenceApp(QWidget):
                 try:
                     # 讀取 Excel 檔案
                     df = pd.read_excel(file_name)
-                    
+
                     # 產生暫時的 CSV 檔名
                     temp_csv_file = os.path.splitext(file_name)[0] + ".csv"
 
@@ -110,12 +140,13 @@ class TimeDifferenceApp(QWidget):
                 if file_name:
                     self.file_path = file_name
                     self.fileLabel.setText(f'選擇的檔案: {file_name}')
-            #之後不管是不是xls都直接去抓CSV檔
+            # 之後不管是不是xls都直接去抓CSV檔
         self.populateComboBoxes()
 
     def saveFile(self):
         options = QFileDialog.Options()
-        file_name, _ = QFileDialog.getSaveFileName(self, "選擇存檔位置", "", "CSV Files (*.csv);;All Files (*)", options=options)
+        file_name, _ = QFileDialog.getSaveFileName(self, "選擇存檔位置", "", "CSV Files (*.csv);;All Files (*)",
+                                                   options=options)
         if file_name:
             self.save_path = file_name
             if not self.save_path.endswith(".csv"):
@@ -172,6 +203,13 @@ class TimeDifferenceApp(QWidget):
         self.CANID2 = self.id2_input.currentText()
         self.CANData1 = self.data1_input.currentText()
         self.CANData2 = self.data2_input.currentText()
+        #修改:讀取最小時間
+        try:
+            self.min_time_diff = float(self.min_time_diff_input.text())
+        except ValueError:
+             QMessageBox.critical(self, "錯誤", "請輸入有效的小數點時間")
+             self.min_time_diff_input.setText("0.000") #輸入錯誤時復原為0
+             return
 
     def processData(self):
         if not self.file_path:
@@ -210,6 +248,7 @@ class TimeDifferenceApp(QWidget):
         # 記錄結果
         time_differences = []
         start_time = None  # 記錄第一個報文的時間
+        count_data1 = 1  # 新增：記錄報文1發送次數
 
         if self.CANData1 == self.CANData2:
             QMessageBox.critical(self, "錯誤", "輸入的報文不能相同!")
@@ -219,13 +258,18 @@ class TimeDifferenceApp(QWidget):
                 if row[data_column] == self.CANData1:
                     if start_time is None:
                         start_time = row[time_column]
+                    else:
+                        count_data1 += 1
                 elif row[data_column] == self.CANData2:
                     if start_time is not None:
                         time_diff = (row[time_column] - start_time).total_seconds()
-                        time_differences.append((start_time, row[time_column], time_diff))
+                         # 修改：只有時間差大於等於最小時間差才記錄
+                        if time_diff >= self.min_time_diff:
+                            time_differences.append((start_time, row[time_column], time_diff, count_data1))
                         start_time = None  # 重置起點
+                        count_data1 = 1
         # 轉換為 DataFrame
-        result_df = pd.DataFrame(time_differences, columns=[f"{self.CANData1}時間", f"{self.CANData2}時間", "時間差 (秒)"])
+        result_df = pd.DataFrame(time_differences, columns=[f"{self.CANData1}時間", f"{self.CANData2}時間", "時間差 (秒)", "報文1發送次數"])
 
         # 格式化時間
         result_df[f"{self.CANData1}時間"] = pd.to_datetime(result_df[f"{self.CANData1}時間"])
@@ -239,11 +283,13 @@ class TimeDifferenceApp(QWidget):
             self.table.setItem(i, 0, QTableWidgetItem(row[f"{self.CANData1}時間"]))
             self.table.setItem(i, 1, QTableWidgetItem(row[f"{self.CANData2}時間"]))
             self.table.setItem(i, 2, QTableWidgetItem(row["時間差 (秒)"]))
+            self.table.setItem(i, 3, QTableWidgetItem(str(row["報文1發送次數"])))
 
         # 儲存結果
         if self.save_path:
             result_df.to_csv(self.save_path, index=False, encoding="utf-8-sig")
             self.saveLabel.setText(f'檔案已儲存至: {self.save_path}')
+
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
